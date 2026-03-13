@@ -4,20 +4,12 @@ pipeline {
     environment {
         SONAR_TOKEN  = credentials('sonar-token')
         IMAGE_NAME   = 'my-python-flask-app'
-        SONAR_HOST   = 'http://sonarqube:9000'
+        SONAR_HOST   = 'http://13.234.17.245:9000'
     }
 
     stages {
 
-        // ─── STAGE 1: Checkout ───
-        stage('Checkout') {
-            steps {
-                echo '>>> Pulling latest source code...'
-                checkout scm
-            }
-        }
-
-        // ─── STAGE 2: Install Dependencies ───
+        // ─── STAGE 1: Install Dependencies ───
         stage('Install Dependencies') {
             steps {
                 echo '>>> Installing Python dependencies...'
@@ -27,7 +19,7 @@ pipeline {
             }
         }
 
-        // ─── STAGE 3: Run Tests + Coverage ───
+        // ─── STAGE 2: Run Tests + Coverage ───
         stage('Run Tests') {
             steps {
                 echo '>>> Running unit tests with coverage...'
@@ -38,31 +30,28 @@ pipeline {
                         --cov-report=term
                 '''
             }
-            post {
-                always {
-                    junit '**/test-results/*.xml'
+        }
+
+        // ─── STAGE 3: SonarQube Analysis ───
+        stage('SonarQube Analysis') {
+            steps {
+                echo '>>> Running SonarQube code analysis...'
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                        sonar-scanner \
+                            -Dsonar.projectKey=my-python-flask-app \
+                            -Dsonar.sources=. \
+                            -Dsonar.exclusions=**/tests/**,**/__pycache__/** \
+                            -Dsonar.host.url=${SONAR_HOST} \
+                            -Dsonar.token=${SONAR_TOKEN} \
+                            -Dsonar.python.coverage.reportPaths=coverage.xml \
+                            -Dsonar.python.version=3.11
+                    '''
                 }
             }
         }
 
-        // ─── STAGE 4: SonarQube Analysis ───
-        stage('SonarQube Analysis') {
-            steps {
-                echo '>>> Running SonarQube code analysis...'
-                sh '''
-                    sonar-scanner \
-                        -Dsonar.projectKey=my-python-flask-app \
-                        -Dsonar.sources=. \
-                        -Dsonar.exclusions=**/tests/**,**/__pycache__/** \
-                        -Dsonar.host.url=${SONAR_HOST} \
-                        -Dsonar.token=${SONAR_TOKEN} \
-                        -Dsonar.python.coverage.reportPaths=coverage.xml \
-                        -Dsonar.python.version=3.11
-                '''
-            }
-        }
-
-        // ─── STAGE 5: Build Docker Image ───
+        // ─── STAGE 4: Build Docker Image ───
         stage('Build Docker Image') {
             steps {
                 echo '>>> Building Docker image...'
@@ -73,7 +62,7 @@ pipeline {
             }
         }
 
-        // ─── STAGE 6: Deploy ───
+        // ─── STAGE 5: Deploy ───
         stage('Deploy') {
             steps {
                 echo '>>> Deploying Flask application...'
@@ -82,7 +71,6 @@ pipeline {
                     docker rm   ${IMAGE_NAME} || true
                     docker run -d \
                         --name ${IMAGE_NAME} \
-                        --network devops-network \
                         -p 5000:5000 \
                         ${IMAGE_NAME}:${BUILD_NUMBER}
                 '''
@@ -93,9 +81,6 @@ pipeline {
     post {
         success {
             echo '✅ Pipeline completed successfully!'
-            echo '   App        → http://localhost:5000'
-            echo '   SonarQube  → http://localhost:9000'
-            echo '   Jenkins    → http://localhost:8080'
         }
         failure {
             echo '❌ Pipeline failed! Check logs above.'
