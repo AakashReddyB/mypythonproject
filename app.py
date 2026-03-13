@@ -12,7 +12,4 @@ def health():
 
 @app.route('/greet/<name>')
 def greet(name):
-    return jsonify({"message": f"Hello, {name}!"})
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    return jsonify({"message": f"Hello {name}!"})
