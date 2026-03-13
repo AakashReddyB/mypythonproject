@@ -4,12 +4,21 @@ pipeline {
     environment {
         SONAR_TOKEN  = credentials('sonar-token')
         IMAGE_NAME   = 'my-python-flask-app'
-        SONAR_HOST   = 'http://13.234.17.245:9000'
+        SONAR_HOST   = 'http://3.7.36.157:9000'
     }
 
     stages {
 
-        // ─── STAGE 1: Install Dependencies ───
+        // ─── STAGE 1: Checkout ───
+        stage('Checkout') {
+            steps {
+                echo '>>> Pulling latest source code...'
+                git branch: 'main',
+                    url: 'https://github.com/AakashReddyB/mypythonproject.git'
+            }
+        }
+
+        // ─── STAGE 2: Install Dependencies ───
         stage('Install Dependencies') {
             steps {
                 echo '>>> Installing Python dependencies...'
@@ -19,7 +28,7 @@ pipeline {
             }
         }
 
-        // ─── STAGE 2: Run Tests + Coverage ───
+        // ─── STAGE 3: Run Tests + Coverage ───
         stage('Run Tests') {
             steps {
                 echo '>>> Running unit tests with coverage...'
@@ -32,7 +41,7 @@ pipeline {
             }
         }
 
-        // ─── STAGE 3: SonarQube Analysis ───
+        // ─── STAGE 4: SonarQube Analysis ───
         stage('SonarQube Analysis') {
             steps {
                 echo '>>> Running SonarQube code analysis...'
@@ -51,7 +60,7 @@ pipeline {
             }
         }
 
-        // ─── STAGE 4: Build Docker Image ───
+        // ─── STAGE 5: Build Docker Image ───
         stage('Build Docker Image') {
             steps {
                 echo '>>> Building Docker image...'
@@ -62,7 +71,7 @@ pipeline {
             }
         }
 
-        // ─── STAGE 5: Deploy ───
+        // ─── STAGE 6: Deploy ───
         stage('Deploy') {
             steps {
                 echo '>>> Deploying Flask application...'
@@ -81,6 +90,9 @@ pipeline {
     post {
         success {
             echo '✅ Pipeline completed successfully!'
+            echo '   App        → http://3.7.36.157:5000'
+            echo '   SonarQube  → http://3.7.36.157:9000'
+            echo '   Jenkins    → http://3.7.36.157:8080'
         }
         failure {
             echo '❌ Pipeline failed! Check logs above.'
