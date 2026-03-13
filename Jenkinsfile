@@ -60,7 +60,17 @@ pipeline {
             }
         }
 
-        // ─── STAGE 5: Build Docker Image ───
+        // ─── STAGE 5: Quality Gate ───
+        stage('Quality Gate') {
+            steps {
+                echo '>>> Waiting for SonarQube Quality Gate result...'
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        // ─── STAGE 6: Build Docker Image ───
         stage('Build Docker Image') {
             steps {
                 echo '>>> Building Docker image...'
@@ -71,7 +81,7 @@ pipeline {
             }
         }
 
-        // ─── STAGE 6: Deploy ───
+        // ─── STAGE 7: Deploy Application ───
         stage('Deploy') {
             steps {
                 echo '>>> Deploying Flask application...'
@@ -90,9 +100,9 @@ pipeline {
     post {
         success {
             echo '✅ Pipeline completed successfully!'
-            echo '   App        → http://3.7.36.157:5000'
-            echo '   SonarQube  → http://3.7.36.157:9000'
-            echo '   Jenkins    → http://3.7.36.157:8080'
+            echo 'App        → http://3.7.36.157:5000'
+            echo 'SonarQube  → http://3.7.36.157:9000'
+            echo 'Jenkins    → http://3.7.36.157:8080'
         }
         failure {
             echo '❌ Pipeline failed! Check logs above.'
