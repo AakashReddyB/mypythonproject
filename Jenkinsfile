@@ -23,7 +23,7 @@ pipeline {
             steps {
                 echo '>>> Installing Python dependencies...'
                 sh '''
-                    pip install -r requirements.txt
+                    pip3 install --break-system-packages -r requirements.txt
                 '''
             }
         }
@@ -33,7 +33,7 @@ pipeline {
             steps {
                 echo '>>> Running unit tests with coverage...'
                 sh '''
-                    pytest tests/ \
+                    python3 -m pytest tests/ \
                         --cov=. \
                         --cov-report=xml:coverage.xml \
                         --cov-report=term
